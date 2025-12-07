@@ -3,197 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reels Analytics</title>
-    
-    <!-- Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+    <title>Instagram Reels Analytics</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
     <div class="container">
-        
-        <!-- Error & Loading Containers -->
-        <div id="loading" class="loading-overlay" style="display: none;">
-            <div class="spinner"></div>
-            <p class="text-muted">Analyzing Data...</p>
-        </div>
-        <div id="error-message" class="error-toast" style="display: none;">
-            <i data-lucide="alert-circle"></i>
-            <span id="error-text"></span>
-        </div>
-
-        <!-- Bento Grid Layout -->
-        <div class="bento-grid">
+        <header class="header">
+            <h1>📊 Instagram Reels Dashboard</h1>
             
-            <!-- Header (Full Width) -->
-            <header class="card col-span-12">
-                <div class="header-content">
-                    <div class="header-title">
-                        <div class="icon-box">
-                            <i data-lucide="bar-chart-2"></i>
-                        </div>
-                        <div>
-                            <h1>Analytics</h1>
-                            <h3 id="current-period-display">Overview Dashboard</h3>
-                        </div>
-                    </div>
-
-                    <div class="controls-wrapper">
-                        <div class="input-group">
-                            <input type="text" id="account-url" placeholder="Instagram URL...">
-                        </div>
-                        <button id="update-url-btn" class="btn btn-secondary btn-icon">
-                            <i data-lucide="refresh-cw" width="18"></i>
-                        </button>
-                        
-                        <div class="input-group" style="position: relative;">
-                            <input type="date" id="start-date">
-                            <span style="color: var(--text-tertiary)">-</span>
-                            <input type="date" id="end-date">
-                            
-                            <button id="quick-period-btn" class="btn btn-secondary btn-icon" style="margin-left: 8px;">
-                                <i data-lucide="calendar" width="18"></i>
-                            </button>
-                        </div>
-
-                        <button id="refresh-btn" class="btn btn-primary">
-                            <span>Update Data</span>
-                            <i data-lucide="arrow-right" width="16"></i>
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Stats Row -->
-            <div id="dashboard" class="bento-grid col-span-12" style="display: none; margin-top: 0; padding: 0;">
-                
-                <!-- Account Info -->
-                <div class="card col-span-3">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <h3 class="text-muted">Account</h3>
-                            <i data-lucide="instagram" class="stat-icon" width="20"></i>
-                        </div>
-                        <div>
-                            <div class="stat-value" id="account-name" style="font-size: 1.5rem;">@username</div>
-                            <div class="stat-label" id="follower-count">0 Followers</div>
-                        </div>
+            <div class="account-controls">
+                <div class="control-group">
+                    <label>Instagram URL</label>
+                    <div class="input-row">
+                        <input type="text" id="account-url" placeholder="https://www.instagram.com/username/">
+                        <button id="update-url-btn" class="btn btn-primary">Save</button>
                     </div>
                 </div>
 
-                <div class="card col-span-3">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <h3 class="text-muted">Total Reels</h3>
-                            <i data-lucide="film" class="stat-icon" width="20"></i>
-                        </div>
-                        <div>
-                            <div class="stat-value text-value" id="total-reels">0</div>
-                            <div class="stat-label">In selected period</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card col-span-3">
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <h3 class="text-muted">Avg. Engagement</h3>
-                            <i data-lucide="activity" class="stat-icon" width="20"></i>
-                        </div>
-                        <div>
-                            <div class="stat-value text-value" id="avg-er">0%</div>
-                            <div class="stat-label">Per Reel</div>
-                        </div>
+                <div class="control-group">
+                    <label>Analysis Period</label>
+                    <div class="input-row">
+                        <input type="date" id="start-date">
+                        <input type="date" id="end-date">
+                        <button id="quick-period-btn" class="btn btn-secondary btn-sm">Quick Select</button>
                     </div>
                 </div>
                 
-                <div class="card col-span-3">
-                     <div class="stat-card">
-                        <div class="stat-header">
-                            <h3 class="text-muted">Total Interactions</h3>
-                            <i data-lucide="heart" class="stat-icon" width="20"></i>
-                        </div>
-                        <div>
-                            <div class="stat-value text-value" id="total-interactions">-</div>
-                            <div class="stat-label">Likes + Comments</div>
-                        </div>
-                    </div>
+                <button id="refresh-btn" class="btn btn-secondary" style="height: 42px;">Refresh Data</button>
+            </div>
+        </header>
+
+        <div id="error-message" class="error-message"></div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing Account Data...</p>
+        </div>
+
+        <div id="dashboard" style="display: none;">
+            <!-- Account Stats -->
+            <div class="info-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Account</div>
+                    <div class="stat-value" id="account-name" style="font-size: 1.5rem">@username</div>
+                    <div class="stat-label" id="follower-count" style="margin-top: 5px">0 Followers</div>
                 </div>
-
-                <!-- Main Chart (Views) -->
-                <div class="card col-span-8">
-                    <div class="stat-header">
-                        <h2>Views Performance</h2>
-                    </div>
-                    <div style="height: 300px; width: 100%;">
-                        <canvas id="views-chart"></canvas>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Reels</div>
+                    <div class="stat-value" id="total-reels">0</div>
+                    <div class="stat-label" id="period-range">Last 7 Days</div>
                 </div>
-
-                <!-- Secondary Chart (ER) -->
-                <div class="card col-span-4">
-                    <div class="stat-header">
-                         <h2>Engagement Rate</h2>
-                    </div>
-                    <div style="height: 300px; width: 100%;">
-                        <canvas id="er-chart"></canvas>
-                    </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg. Engagement Rate</div>
+                    <div class="stat-value" id="avg-er">0%</div>
                 </div>
+            </div>
 
-                <!-- Bottom Chart (Interactions) -->
-                <div class="card col-span-12">
-                     <div class="stat-header">
-                         <h2>Likes vs Comments</h2>
-                    </div>
-                     <div style="height: 250px; width: 100%;">
-                        <canvas id="engagement-chart"></canvas>
-                    </div>
+            <!-- Charts -->
+            <section class="charts-section">
+                <div class="chart-container">
+                    <h3>Views Performance</h3>
+                    <canvas id="views-chart"></canvas>
                 </div>
-
-                <!-- Data Table -->
-                <div class="card col-span-12">
-                    <div class="stat-header">
-                        <h2>Recent Posts</h2>
-                    </div>
-                    <div class="table-container">
-                        <table id="posts-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Caption</th>
-                                    <th>Views</th>
-                                    <th>Likes</th>
-                                    <th>Comments</th>
-                                    <th>ER (%)</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="posts-tbody">
-                                <!-- JS will populate this -->
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="chart-container">
+                    <h3>Engagement Rate (%)</h3>
+                    <canvas id="er-chart"></canvas>
                 </div>
+                <div class="chart-container" style="grid-column: 1 / -1;">
+                    <h3>Interactions Breakdown</h3>
+                    <canvas id="engagement-chart"></canvas>
+                </div>
+            </section>
 
-            </div> <!-- End Dashboard Wrapper -->
-
-        </div> <!-- End Main Grid -->
+            <!-- Table -->
+            <section class="posts-section">
+                <h2>Recent Posts</h2>
+                <div class="table-wrapper">
+                    <table id="posts-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Caption</th>
+                                <th>Views</th>
+                                <th>Likes</th>
+                                <th>Comments</th>
+                                <th>ER</th>
+                                <th>Link</th>
+                            </tr>
+                        </thead>
+                        <tbody id="posts-tbody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
     </div>
 
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-    <script>
-        // Init Lucide Icons
-        lucide.createIcons();
-    </script>
 </body>
 </html>
