@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Reels Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📊 Instagram Reels Dashboard</h1>
+            <div class="account-controls">
+                <div class="url-input-group">
+                    <label for="account-url">URL аккаунта Instagram:</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="account-url" placeholder="https://www.instagram.com/username/">
+                        <button id="update-url-btn" class="btn btn-primary">Обновить</button>
+                    </div>
+                </div>
+                <div class="period-selector">
+                    <label for="start-date">Период анализа:</label>
+                    <div class="date-inputs">
+                        <div class="date-input-group">
+                            <label for="start-date">С:</label>
+                            <input type="date" id="start-date" class="date-input">
+                        </div>
+                        <div class="date-input-group">
+                            <label for="end-date">По:</label>
+                            <input type="date" id="end-date" class="date-input">
+                        </div>
+                        <button id="quick-period-btn" class="btn btn-quick">Быстрый выбор</button>
+                    </div>
+                </div>
+                <button id="refresh-btn" class="btn btn-secondary">🔄 Обновить данные</button>
+            </div>
+        </header>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Загрузка данных...</p>
+        </div>
+
+        <div id="error-message" class="error-message" style="display: none;"></div>
+
+        <div id="dashboard" class="dashboard" style="display: none;">
+            <!-- Информация об аккаунте -->
+            <section class="account-info">
+                <h2 id="account-name"></h2>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-label">Период анализа</div>
+                        <div class="info-value" id="period-range"></div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Подписчиков</div>
+                        <div class="info-value" id="follower-count"></div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Всего Reels</div>
+                        <div class="info-value" id="total-reels"></div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">Средний ER</div>
+                        <div class="info-value" id="avg-er"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Графики -->
+            <section class="charts-section">
+                <div class="chart-container">
+                    <h3>Просмотры по постам</h3>
+                    <canvas id="views-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Engagement Rate по постам</h3>
+                    <canvas id="er-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Лайки и комментарии</h3>
+                    <canvas id="engagement-chart"></canvas>
+                </div>
+            </section>
+
+            <!-- Таблица постов -->
+            <section class="posts-section">
+                <h2>Детальная статистика по Reels</h2>
+                <div class="table-wrapper">
+                    <table id="posts-table">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Описание</th>
+                                <th>Просмотры</th>
+                                <th>Лайки</th>
+                                <th>Комментарии</th>
+                                <th>ER (%)</th>
+                                <th>Ссылка</th>
+                            </tr>
+                        </thead>
+                        <tbody id="posts-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
+
