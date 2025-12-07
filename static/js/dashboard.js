@@ -1,3 +1,8 @@
+// Config Chart Defaults
+Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
+Chart.defaults.color = '#71717a';
+Chart.defaults.scale.grid.color = 'rgba(0, 0, 0, 0.03)';
+
 // Глобальные переменные для графиков
 let viewsChart = null;
 let erChart = null;
@@ -451,8 +456,9 @@ function updateTable(reels) {
             link.href = reel.url;
             link.target = '_blank';
             link.className = 'post-link';
-            link.textContent = 'Открыть';
+            link.innerHTML = '<i data-lucide="external-link" width="14"></i>'; // Use Icon
             linkCell.appendChild(link);
+            lucide.createIcons({ root: linkCell }); // Init icon
         } else {
             linkCell.textContent = '-';
         }
@@ -488,8 +494,11 @@ function hideDashboard() {
 
 function showError(message) {
     const errorDiv = document.getElementById('error-message');
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
+    const errorText = document.getElementById('error-text');
+    if(errorText) errorText.textContent = message;
+    else errorDiv.textContent = message;
+    
+    errorDiv.style.display = 'flex';
     setTimeout(() => {
         errorDiv.style.display = 'none';
     }, 5000);
@@ -500,18 +509,24 @@ function hideError() {
 }
 
 function showSuccess(message) {
+    // We reuse error-message but style it green temporarily via CSS or inline styles if needed, 
+    // but better to just show a toast. For now, simple text update:
     const errorDiv = document.getElementById('error-message');
+    const errorText = document.getElementById('error-text');
+    
+    if(errorText) errorText.textContent = message;
+    else errorDiv.textContent = message;
+
     errorDiv.style.background = '#f0fdf4';
     errorDiv.style.color = '#15803d';
-    errorDiv.style.borderLeftColor = '#22c55e';
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
+    errorDiv.style.borderColor = '#bbf7d0';
+    errorDiv.style.display = 'flex';
+
     setTimeout(() => {
         errorDiv.style.display = 'none';
-        // Reset to error styles (will be applied by CSS class anyway when error occurs)
+        // Reset styles
         errorDiv.style.background = ''; 
         errorDiv.style.color = '';
-        errorDiv.style.borderLeftColor = '';
+        errorDiv.style.borderColor = '';
     }, 3000);
 }
-
