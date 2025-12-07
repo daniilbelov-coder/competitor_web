@@ -1,39 +1,25 @@
-// Config Chart Defaults
+// Chart Defaults
 Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
-Chart.defaults.color = '#71717a';
-Chart.defaults.scale.grid.color = 'rgba(0, 0, 0, 0.03)';
+Chart.defaults.color = '#64748b';
 
-// Глобальные переменные для графиков
 let viewsChart = null;
 let erChart = null;
 let engagementChart = null;
 
-// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
     initializeDateInputs();
     loadAccountUrl();
     loadData();
     
-    // Обработчики событий
     document.getElementById('update-url-btn').addEventListener('click', updateAccountUrl);
     document.getElementById('refresh-btn').addEventListener('click', loadData);
     document.getElementById('quick-period-btn').addEventListener('click', showQuickPeriodMenu);
-    document.getElementById('account-url').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            updateAccountUrl();
-        }
-    });
     
-    // Автоматическая загрузка данных при изменении дат
-    document.getElementById('start-date').addEventListener('change', function() {
-        setTimeout(loadData, 300);
-    });
-    document.getElementById('end-date').addEventListener('change', function() {
-        setTimeout(loadData, 300);
-    });
+    // Auto-load on date change
+    document.getElementById('start-date').addEventListener('change', () => setTimeout(loadData, 300));
+    document.getElementById('end-date').addEventListener('change', () => setTimeout(loadData, 300));
 });
 
-// Инициализация полей даты значениями по умолчанию
 function initializeDateInputs() {
     const endDate = new Date();
     const startDate = new Date();
@@ -43,7 +29,6 @@ function initializeDateInputs() {
     document.getElementById('start-date').value = formatDateForInput(startDate);
 }
 
-// Форматирование даты для input type="date" (YYYY-MM-DD)
 function formatDateForInput(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -51,431 +36,181 @@ function formatDateForInput(date) {
     return `${year}-${month}-${day}`;
 }
 
-// Показать меню быстрого выбора периода
-function showQuickPeriodMenu() {
-    const menu = document.createElement('div');
-    menu.className = 'quick-period-menu';
-    menu.innerHTML = `
-        <div class="quick-period-item" data-days="7">Последние 7 дней</div>
-        <div class="quick-period-item" data-days="14">Последние 14 дней</div>
-        <div class="quick-period-item" data-days="30">Последние 30 дней</div>
-        <div class="quick-period-item" data-days="90">Последние 90 дней</div>
-        <div class="quick-period-item" data-days="0">Сегодня</div>
-    `;
-    
-    const oldMenu = document.querySelector('.quick-period-menu');
-    if (oldMenu) {
-        oldMenu.remove();
-    }
-    
-    document.body.appendChild(menu);
-    
-    const btn = document.getElementById('quick-period-btn');
-    const rect = btn.getBoundingClientRect();
-    menu.style.top = (rect.bottom + 5) + 'px';
-    menu.style.left = rect.left + 'px';
-    
-    menu.querySelectorAll('.quick-period-item').forEach(item => {
-        item.addEventListener('click', function() {
-            const days = parseInt(this.dataset.days);
-            setQuickPeriod(days);
-            menu.remove();
-        });
-    });
-    
-    setTimeout(() => {
-        document.addEventListener('click', function closeMenu(e) {
-            if (!menu.contains(e.target) && e.target !== btn) {
-                menu.remove();
-                document.removeEventListener('click', closeMenu);
-            }
-        });
-    }, 100);
-}
-
-// Установить быстрый период
-function setQuickPeriod(days) {
-    const endDate = new Date();
-    const startDate = new Date();
-    
-    if (days === 0) {
-        startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(23, 59, 59, 999);
-    } else {
-        startDate.setDate(startDate.getDate() - days);
-        startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(23, 59, 59, 999);
-    }
-    
-    document.getElementById('start-date').value = formatDateForInput(startDate);
-    document.getElementById('end-date').value = formatDateForInput(endDate);
-    
-    loadData();
-}
-
-// Загрузка текущего URL аккаунта
 async function loadAccountUrl() {
     try {
         const response = await fetch('/api/account-url');
         const data = await response.json();
-        if (data.url) {
-            document.getElementById('account-url').value = data.url;
-        }
+        if (data.url) document.getElementById('account-url').value = data.url;
     } catch (error) {
-        console.error('Ошибка при загрузке URL аккаунта:', error);
+        console.error('Error loading URL:', error);
     }
 }
 
-// Обновление URL аккаунта
 async function updateAccountUrl() {
     const urlInput = document.getElementById('account-url');
     const newUrl = urlInput.value.trim();
     
-    if (!newUrl) {
-        showError('URL не может быть пустым');
-        return;
-    }
-    
-    if (!newUrl.includes('instagram.com')) {
-        showError('URL должен содержать instagram.com');
-        return;
-    }
+    if (!newUrl) return showError('URL cannot be empty');
+    if (!newUrl.includes('instagram.com')) return showError('Must be a valid Instagram URL');
     
     try {
         const response = await fetch('/api/account-url', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: newUrl })
         });
-        
         const data = await response.json();
-        
-        if (data.error) {
-            showError(data.error);
-        } else {
-            showSuccess('URL аккаунта успешно обновлен');
+        if (data.error) showError(data.error);
+        else {
             loadData();
         }
     } catch (error) {
-        showError('Ошибка при обновлении URL: ' + error.message);
+        showError(error.message);
     }
 }
 
-// Загрузка данных
 async function loadData() {
     showLoading();
     hideError();
-    hideDashboard();
+    document.getElementById('dashboard').style.display = 'none';
     
     try {
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
         
-        let url = '/api/data';
-        const params = new URLSearchParams();
-        if (startDate) {
-            params.append('start_date', startDate);
-        }
-        if (endDate) {
-            params.append('end_date', endDate);
-        }
-        if (params.toString()) {
-            url += '?' + params.toString();
-        }
+        let url = `/api/data?start_date=${startDate}&end_date=${endDate}`;
         
         const response = await fetch(url);
         const data = await response.json();
         
         if (data.error) {
-            showError('Ошибка при получении данных: ' + data.error);
+            showError('Data Error: ' + data.error);
             return;
         }
         
         displayData(data);
     } catch (error) {
-        showError('Ошибка при загрузке данных: ' + error.message);
+        showError('Network Error: ' + error.message);
+    } finally {
+        hideLoading();
     }
 }
 
-// Отображение данных
 function displayData(data) {
-    hideLoading();
-    showDashboard();
+    document.getElementById('dashboard').style.display = 'block';
     
     document.getElementById('account-name').textContent = `@${data.account}`;
     document.getElementById('period-range').textContent = `${data.period.start} - ${data.period.end}`;
-    document.getElementById('follower-count').textContent = formatNumber(data.followerCount);
+    document.getElementById('follower-count').textContent = formatNumber(data.followerCount) + ' Followers';
     document.getElementById('total-reels').textContent = data.reels.length;
     
-    if (data.reels.length > 0) {
-        const avgER = data.reels.reduce((sum, reel) => sum + (reel.er || 0), 0) / data.reels.length;
-        document.getElementById('avg-er').textContent = avgER.toFixed(2) + '%';
-    } else {
-        document.getElementById('avg-er').textContent = '0%';
-    }
+    const avgER = data.reels.length > 0 
+        ? data.reels.reduce((sum, reel) => sum + (reel.er || 0), 0) / data.reels.length 
+        : 0;
+    document.getElementById('avg-er').textContent = avgER.toFixed(2) + '%';
     
     updateCharts(data.reels);
     updateTable(data.reels);
 }
 
-// Обновление графиков
 function updateCharts(reels) {
-    if (reels.length === 0) {
-        return;
-    }
+    if (!reels.length) return;
     
-    const sortedReels = [...reels].sort((a, b) => {
-        const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
-        const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
-        return dateB - dateA;
-    });
+    const sorted = [...reels].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const labels = sorted.map((r, i) => r.timestamp ? new Date(r.timestamp).toLocaleDateString('ru-RU', {day:'2-digit', month:'2-digit'}) : `#${i+1}`);
     
-    const labels = sortedReels.map((reel, index) => {
-        if (reel.timestamp) {
-            const date = new Date(reel.timestamp);
-            return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-        }
-        return `Пост ${index + 1}`;
-    });
-    
-    // График просмотров
-    const viewsCtx = document.getElementById('views-chart').getContext('2d');
-    if (viewsChart) {
-        viewsChart.destroy();
-    }
-    viewsChart = new Chart(viewsCtx, {
+    // Views Chart
+    if (viewsChart) viewsChart.destroy();
+    viewsChart = new Chart(document.getElementById('views-chart'), {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Просмотры',
-                data: sortedReels.map(r => r.viewsCount || 0),
-                backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                borderColor: 'rgba(59, 130, 246, 1)',
-                borderWidth: 1,
+                label: 'Views',
+                data: sorted.map(r => r.viewsCount),
+                backgroundColor: '#3b82f6',
                 borderRadius: 4
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return formatNumber(value);
-                        }
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return 'Просмотры: ' + formatNumber(context.parsed.y);
-                        }
-                    }
-                }
-            }
-        }
+        options: { responsive: true, plugins: { legend: { display: false } } }
     });
     
-    // График Engagement Rate
-    const erCtx = document.getElementById('er-chart').getContext('2d');
-    if (erChart) {
-        erChart.destroy();
-    }
-    erChart = new Chart(erCtx, {
+    // ER Chart
+    if (erChart) erChart.destroy();
+    erChart = new Chart(document.getElementById('er-chart'), {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
-                label: 'ER (%)',
-                data: sortedReels.map(r => r.er || 0),
-                borderColor: 'rgba(17, 24, 39, 1)',
-                backgroundColor: 'rgba(17, 24, 39, 0.05)',
-                borderWidth: 2,
+                label: 'ER %',
+                data: sorted.map(r => r.er),
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 fill: true,
-                tension: 0.4,
-                pointBackgroundColor: '#fff',
-                pointBorderColor: 'rgba(17, 24, 39, 1)',
-                pointBorderWidth: 2
+                tension: 0.3
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toFixed(2) + '%';
-                        }
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return 'ER: ' + context.parsed.y.toFixed(2) + '%';
-                        }
-                    }
-                }
-            }
-        }
+        options: { responsive: true, plugins: { legend: { display: false } } }
     });
     
-    // График лайков и комментариев
-    const engagementCtx = document.getElementById('engagement-chart').getContext('2d');
-    if (engagementChart) {
-        engagementChart.destroy();
-    }
-    engagementChart = new Chart(engagementCtx, {
+    // Engagement Chart
+    if (engagementChart) engagementChart.destroy();
+    engagementChart = new Chart(document.getElementById('engagement-chart'), {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [
                 {
-                    label: 'Лайки',
-                    data: sortedReels.map(r => r.likesCount || 0),
-                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    borderWidth: 1,
+                    label: 'Likes',
+                    data: sorted.map(r => r.likesCount),
+                    backgroundColor: '#f43f5e',
                     borderRadius: 4
                 },
                 {
-                    label: 'Комментарии',
-                    data: sortedReels.map(r => r.commentsCount || 0),
-                    backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                    borderColor: 'rgba(17, 24, 39, 1)',
-                    borderWidth: 1,
+                    label: 'Comments',
+                    data: sorted.map(r => r.commentsCount),
+                    backgroundColor: '#3b82f6',
                     borderRadius: 4
                 }
             ]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return formatNumber(value);
-                        }
-                    }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + formatNumber(context.parsed.y);
-                        }
-                    }
-                }
-            }
-        }
+        options: { responsive: true }
     });
 }
 
-// Обновление таблицы
 function updateTable(reels) {
     const tbody = document.getElementById('posts-tbody');
     tbody.innerHTML = '';
     
-    if (reels.length === 0) {
-        const row = tbody.insertRow();
-        const cell = row.insertCell();
-        cell.colSpan = 7;
-        cell.textContent = 'Нет данных для отображения';
-        cell.style.textAlign = 'center';
-        cell.style.padding = '20px';
+    const sorted = [...reels].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    if (sorted.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem;">No data found</td></tr>';
         return;
     }
     
-    const sortedReels = [...reels].sort((a, b) => {
-        const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
-        const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
-        return dateB - dateA;
-    });
-    
-    sortedReels.forEach(reel => {
+    sorted.forEach(reel => {
         const row = tbody.insertRow();
+        const date = reel.timestamp ? new Date(reel.timestamp).toLocaleDateString('ru-RU') : '-';
         
-        // Дата
-        const dateCell = row.insertCell();
-        if (reel.timestamp) {
-            const date = new Date(reel.timestamp);
-            dateCell.textContent = date.toLocaleDateString('ru-RU', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-        } else {
-            dateCell.textContent = '-';
-        }
-        
-        // Описание
-        const captionCell = row.insertCell();
-        captionCell.className = 'post-caption';
-        captionCell.title = reel.caption || 'Без описания';
-        captionCell.textContent = reel.caption || 'Без описания';
-        
-        // Просмотры
-        const viewsCell = row.insertCell();
-        viewsCell.textContent = formatNumber(reel.viewsCount || 0);
-        
-        // Лайки
-        const likesCell = row.insertCell();
-        likesCell.textContent = formatNumber(reel.likesCount || 0);
-        
-        // Комментарии
-        const commentsCell = row.insertCell();
-        commentsCell.textContent = formatNumber(reel.commentsCount || 0);
-        
-        // ER
-        const erCell = row.insertCell();
-        erCell.textContent = (reel.er || 0).toFixed(2) + '%';
-        
-        // Ссылка
-        const linkCell = row.insertCell();
-        if (reel.url) {
-            const link = document.createElement('a');
-            link.href = reel.url;
-            link.target = '_blank';
-            link.className = 'post-link';
-            link.innerHTML = '<i data-lucide="external-link" width="14"></i>'; // Use Icon
-            linkCell.appendChild(link);
-            lucide.createIcons({ root: linkCell }); // Init icon
-        } else {
-            linkCell.textContent = '-';
-        }
+        row.innerHTML = `
+            <td>${date}</td>
+            <td class="post-caption" title="${reel.caption}">${reel.caption || '-'}</td>
+            <td>${formatNumber(reel.viewsCount)}</td>
+            <td>${formatNumber(reel.likesCount)}</td>
+            <td>${formatNumber(reel.commentsCount)}</td>
+            <td>${(reel.er || 0).toFixed(2)}%</td>
+            <td>${reel.url ? `<a href="${reel.url}" target="_blank" class="post-link">Open</a>` : '-'}</td>
+        `;
     });
 }
 
-// Форматирование чисел
 function formatNumber(num) {
-    if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-    }
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
     return num.toString();
 }
 
-// Показать/скрыть элементы
 function showLoading() {
     document.getElementById('loading').style.display = 'block';
 }
@@ -484,49 +219,64 @@ function hideLoading() {
     document.getElementById('loading').style.display = 'none';
 }
 
-function showDashboard() {
-    document.getElementById('dashboard').style.display = 'block';
-}
-
-function hideDashboard() {
-    document.getElementById('dashboard').style.display = 'none';
-}
-
-function showError(message) {
-    const errorDiv = document.getElementById('error-message');
-    const errorText = document.getElementById('error-text');
-    if(errorText) errorText.textContent = message;
-    else errorDiv.textContent = message;
-    
-    errorDiv.style.display = 'flex';
-    setTimeout(() => {
-        errorDiv.style.display = 'none';
-    }, 5000);
+function showError(msg) {
+    const el = document.getElementById('error-message');
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 5000);
 }
 
 function hideError() {
     document.getElementById('error-message').style.display = 'none';
 }
 
-function showSuccess(message) {
-    // We reuse error-message but style it green temporarily via CSS or inline styles if needed, 
-    // but better to just show a toast. For now, simple text update:
-    const errorDiv = document.getElementById('error-message');
-    const errorText = document.getElementById('error-text');
+// Quick Menu Logic
+function showQuickPeriodMenu() {
+    // Check if exists
+    if (document.querySelector('.quick-period-menu')) {
+        document.querySelector('.quick-period-menu').remove();
+        return;
+    }
+
+    const menu = document.createElement('div');
+    menu.className = 'quick-period-menu';
+    menu.innerHTML = `
+        <div class="quick-period-item" onclick="setPeriod(7)">Last 7 Days</div>
+        <div class="quick-period-item" onclick="setPeriod(14)">Last 14 Days</div>
+        <div class="quick-period-item" onclick="setPeriod(30)">Last 30 Days</div>
+        <div class="quick-period-item" onclick="setPeriod(0)">Today</div>
+    `;
     
-    if(errorText) errorText.textContent = message;
-    else errorDiv.textContent = message;
-
-    errorDiv.style.background = '#f0fdf4';
-    errorDiv.style.color = '#15803d';
-    errorDiv.style.borderColor = '#bbf7d0';
-    errorDiv.style.display = 'flex';
-
+    const btn = document.getElementById('quick-period-btn');
+    const rect = btn.getBoundingClientRect();
+    
+    // Position relative to button (simple approach)
+    // We append to body to avoid overflow issues
+    document.body.appendChild(menu);
+    menu.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+    menu.style.left = (rect.left + window.scrollX) + 'px';
+    
+    // Close on click outside
     setTimeout(() => {
-        errorDiv.style.display = 'none';
-        // Reset styles
-        errorDiv.style.background = ''; 
-        errorDiv.style.color = '';
-        errorDiv.style.borderColor = '';
-    }, 3000);
+        document.addEventListener('click', function close(e) {
+            if (!menu.contains(e.target) && e.target !== btn) {
+                menu.remove();
+                document.removeEventListener('click', close);
+            }
+        });
+    }, 100);
+}
+
+function setPeriod(days) {
+    const end = new Date();
+    const start = new Date();
+    if (days > 0) start.setDate(start.getDate() - days);
+    else start.setHours(0,0,0,0);
+    
+    document.getElementById('start-date').value = formatDateForInput(start);
+    document.getElementById('end-date').value = formatDateForInput(end);
+    loadData();
+    
+    const menu = document.querySelector('.quick-period-menu');
+    if(menu) menu.remove();
 }
